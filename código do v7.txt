@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PersonalMOLDES - Gestão Inteligente</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonte Nunito Sans -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;600;700;800&display=swap');
+
+        body { 
+            font-family: 'Nunito Sans', sans-serif; 
+            background-color: #f4f4f5; /* Zinc-100 */
+            color: #27272a; /* Zinc-800 */
+        }
+
+        /* Classes Utilitárias Customizadas */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .miniatura-card {
+            height: 200px;
+            width: 100%;
+            object-fit: cover;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Esconder scrollbar mas permitir scroll */
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Animação suave para desabilitar seções */
+        .disabled-section {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- ========================================== -->
+    <!-- TELA DE LOGIN -->
+    <!-- ========================================== -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900 bg-opacity-100 transition-opacity duration-500">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-zinc-200 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-emerald-600"></div>
+            
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center p-4 bg-zinc-100 rounded-full mb-4">
+                    <i data-lucide="layers" class="w-8 h-8 text-zinc-800"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-zinc-800 tracking-tight">PersonalMOLDES</h1>
+                <p class="text-zinc-500 text-sm mt-1">Entre para acessar o sistema</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 uppercase mb-1">Usuário / Email</label>
+                    <input type="email" id="loginEmail" required 
+                        class="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
+                        placeholder="seu@email.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 uppercase mb-1">Senha</label>
+                    <input type="password" id="loginPass" required 
+                        class="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
+                        placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full py-3 bg-zinc-800 text-white font-bold rounded-xl hover:bg-zinc-900 transition shadow-lg mt-2">
+                    Entrar
+                </button>
+            </form>
+            <p id="loginError" class="text-rose-500 text-xs text-center mt-4 font-bold hidden"></p>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- APLICAÇÃO PRINCIPAL -->
+    <!-- ========================================== -->
+    <div id="appContainer" class="hidden flex-col min-h-screen">
+        
+        <!-- NAVBAR -->
+        <nav class="bg-zinc-900 text-white sticky top-0 z-40 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Logo -->
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="layers" class="w-6 h-6 text-emerald-400"></i>
+                        <span class="font-extrabold text-lg tracking-tight">PersonalMOLDES</span>
+                    </div>
+                    
+                    <!-- Menu Desktop (Botões de Acesso) -->
+                    <div class="hidden md:flex items-center space-x-1">
+                        <button onclick="navegarPara('home')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-zinc-800 transition flex items-center gap-2" data-target="home">
+                            <i data-lucide="home" class="w-4 h-4"></i> Início
+                        </button>
+                        <button onclick="navegarPara('catalogo')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-zinc-800 transition flex items-center gap-2" data-target="catalogo">
+                            <i data-lucide="grid" class="w-4 h-4"></i> Catálogo
+                        </button>
+                        
+                        <!-- Botões Restritos Admin -->
+                        <button onclick="navegarPara('modelagem')" class="admin-only nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-zinc-800 transition flex items-center gap-2" data-target="modelagem">
+                            <i data-lucide="scissors" class="w-4 h-4 text-emerald-400"></i> Controle Modelagem
+                        </button>
+                        <button onclick="navegarPara('usuarios')" class="admin-only nav-btn px-3 py-2 rounded-md text-sm font-medium hover:bg-zinc-800 transition flex items-center gap-2" data-target="usuarios">
+                            <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i> Usuários
+                        </button>
+                    </div>
+
+                    <!-- User Menu -->
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block">
+                            <div id="userNameDisplay" class="text-sm font-bold text-white">Usuário</div>
+                            <div id="userRoleDisplay" class="text-xs text-zinc-400 uppercase">Cargo</div>
+                        </div>
+                        <button onclick="logout()" class="p-2 bg-zinc-800 rounded-full hover:bg-rose-600 transition text-white" title="Sair">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- CONTEÚDO DAS PÁGINAS -->
+        <main class="flex-grow max-w-7xl mx-auto w-full p-4 lg:p-8">
+
+            <!-- PÁGINA 1: INÍCIO (Dashboard) -->
+            <section id="view-home" class="view-section space-y-8">
+                <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h2 class="text-3xl font-bold mb-2">Bem-vindo ao PersonalMOLDES</h2>
+                        <p class="opacity-90">Gerencie sua produção e modelagem com eficiência.</p>
+                    </div>
+                    <i data-lucide="layers" class="absolute right-[-20px] bottom-[-20px] w-64 h-64 text-white opacity-10"></i>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-bold text-zinc-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="clock" class="w-5 h-5 text-emerald-600"></i> Últimas Peças Cadastradas
+                    </h3>
+                    <div id="homeRecentGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- JS injeta cards aqui -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- PÁGINA 2: CATÁLOGO (Visualização Pública) -->
+            <section id="view-catalogo" class="view-section hidden space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-zinc-200">
+                    <h2 class="text-2xl font-bold text-zinc-800">Catálogo Completo</h2>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="mudarVisualizacaoCatalogo('grade')" class="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 active-view-btn" id="btnViewGrade">
+                            <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="mudarVisualizacaoCatalogo('lista')" class="p-2 rounded-lg bg-white hover:bg-zinc-100 text-zinc-400" id="btnViewLista">
+                            <i data-lucide="list" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros Inteligentes -->
+                <div class="bg-zinc-50 p-6 rounded-2xl border border-zinc-200 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Busca Texto -->
+                        <div class="md:col-span-4 relative">
+                            <i data-lucide="search" class="absolute left-3 top-3.5 h-5 w-5 text-zinc-400"></i>
+                            <input type="text" id="catSearchInput" oninput="aplicarFiltrosCatalogo()"
+                                class="w-full pl-10 pr-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none"
+                                placeholder="Buscar por Nome ou Código...">
+                        </div>
+
+                        <!-- Select: Tipo de Peça -->
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-500 uppercase mb-1">Tipo de Peça</label>
+                            <select id="catFiltroTipo" onchange="aplicarFiltrosCatalogo()" class="w-full p-2.5 rounded-lg border border-zinc-300 bg-white text-sm">
+                                <option value="">Todos</option>
+                                <!-- JS Popula -->
+                            </select>
+                        </div>
+
+                        <!-- Select: Gênero -->
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-500 uppercase mb-1">Gênero</label>
+                            <select id="catFiltroGenero" onchange="aplicarFiltrosCatalogo()" class="w-full p-2.5 rounded-lg border border-zinc-300 bg-white text-sm">
+                                <option value="">Todos</option>
+                                <option value="MC">Masculino</option>
+                                <option value="FE">Feminino</option>
+                                <option value="USX">Unissex</option>
+                            </select>
+                        </div>
+
+                        <!-- Select: Tipo Físico -->
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-500 uppercase mb-1">Tipo Físico</label>
+                            <select id="catFiltroFisico" onchange="aplicarFiltrosCatalogo()" class="w-full p-2.5 rounded-lg border border-zinc-300 bg-white text-sm">
+                                <option value="">Todos</option>
+                                <option value="IFJ">Infanto Juvenil</option>
+                                <option value="ADT">Adulto</option>
+                                <option value="PLS">Plus Size</option>
+                                <option value="SBM">Sob Medida</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-end">
+                            <button onclick="limparFiltrosCatalogo()" class="w-full py-2.5 bg-zinc-200 hover:bg-zinc-300 text-zinc-700 font-bold rounded-lg text-sm transition">
+                                Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="catalogoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- JS injeta -->
+                </div>
+                <div id="catalogoLista" class="hidden space-y-2">
+                    <!-- JS injeta -->
+                </div>
+                <p id="catalogoVazio" class="hidden text-center py-12 text-zinc-400 font-medium">Nenhum resultado encontrado.</p>
+            </section>
+
+            <!-- PÁGINA 3: CONTROLE DE MODELAGEM (ADMIN ONLY) -->
+            <section id="view-modelagem" class="view-section hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- FORMULÁRIO (Esquerda) -->
+                    <div class="lg:col-span-4 xl:col-span-3">
+                        <div class="bg-white rounded-3xl shadow-lg p-6 border border-zinc-200 sticky top-24">
+                            <h2 id="adminFormTitle" class="text-lg font-bold text-zinc-800 mb-4 flex items-center gap-2 border-b pb-2">
+                                <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i> Cadastrar Molde
+                            </h2>
+                            <form id="adminFormFichamento" class="space-y-4">
+                                <input type="hidden" id="adminFichaId">
+                                
+                                <div class="space-y-3">
+                                    <input type="text" id="adminCodigo" required placeholder="CÓDIGO (Ex: CAM01)" class="w-full p-2.5 rounded-lg bg-zinc-50 border border-zinc-300 text-sm font-bold uppercase">
+                                    <input type="text" id="adminNome" required placeholder="Nome da Peça" class="w-full p-2.5 rounded-lg bg-zinc-50 border border-zinc-300 text-sm">
+                                    
+                                    <div class="relative">
+                                        <select id="adminCategoriaPeca" required class="w-full p-2.5 rounded-lg bg-zinc-50 border border-zinc-300 text-sm font-bold text-zinc-700">
+                                            <option value="">Selecione a Categoria...</option>
+                                            <!-- JS Popula -->
+                                        </select>
+                                        <p id="diversosNotice" class="hidden text-[10px] text-emerald-600 mt-1 pl-1">* Item ornamental: Classificação Universal desabilitada.</p>
+                                    </div>
+                                </div>
+
+                                <div class="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-3">
+                                    <p class="text-xs font-bold text-zinc-400 uppercase">Classificação</p>
+                                    
+                                    <!-- Seção Universal (Pode ser desabilitada via JS) -->
+                                    <div id="adminUniversalSectionWrapper" class="transition-opacity duration-300">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" id="adminCatUniversal" class="rounded text-emerald-600" onchange="toggleAdminUniversalOpts()">
+                                            <span class="text-sm font-bold text-zinc-700">Universal (Gênero/Físico)</span>
+                                        </label>
+                                        
+                                        <div id="adminUniversalOptions" class="hidden grid grid-cols-2 gap-2 pl-2 border-l-2 border-emerald-200 mt-2">
+                                            <select id="adminUnivGenero" class="text-xs p-1 rounded border"><option value="">Gen...</option><option value="MC">Masc</option><option value="FE">Fem</option><option value="USX">Unissex</option></select>
+                                            <select id="adminUnivFisico" class="text-xs p-1 rounded border"><option value="">Fís...</option><option value="IFJ">Infantil</option><option value="ADT">Adulto</option><option value="PLS">Plus</option><option value="SBM">Sob Med</option></select>
+                                            <select id="adminUnivManga" class="text-xs p-1 rounded border"><option value="">Mang...</option><option value="ML">Longa</option><option value="MC">Curta</option></select>
+                                            <select id="adminUnivGola" class="text-xs p-1 rounded border"><option value="">Gol...</option><option value="Redonda">Redonda</option><option value="V">Gola V</option></select>
+                                        </div>
+                                    </div>
+
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="adminCatPersonalizada" class="rounded text-violet-600">
+                                        <span class="text-sm font-bold text-zinc-700">Personalizada</span>
+                                    </label>
+
+                                    <div class="pt-2 border-t border-zinc-200">
+                                        <label class="flex items-center gap-2 cursor-pointer mb-1">
+                                            <input type="radio" name="adminTipoConfeccao" value="sublimada" class="text-fuchsia-600">
+                                            <span class="text-xs font-bold">Sublimada</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="adminTipoConfeccao" value="direta" class="text-teal-600">
+                                            <span class="text-xs font-bold">Direta</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <textarea id="adminComentarios" rows="2" placeholder="Observações..." class="w-full p-2.5 rounded-lg bg-zinc-50 border border-zinc-300 text-sm"></textarea>
+
+                                <div>
+                                    <label class="file-drop-area cursor-pointer block w-full p-4 border-2 border-dashed border-zinc-300 rounded-xl bg-zinc-50 text-center hover:bg-emerald-50 hover:border-emerald-400 transition">
+                                        <span id="adminFileName" class="text-xs text-zinc-500 font-bold">Clique para foto</span>
+                                        <input type="file" id="adminFoto" accept="image/*" class="hidden" onchange="updateFileName(this)">
+                                    </label>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button type="submit" id="adminSubmitBtn" class="flex-1 bg-zinc-800 text-white py-2 rounded-lg font-bold hover:bg-zinc-900 transition">Salvar</button>
+                                    <button type="button" onclick="resetAdminForm()" class="px-3 bg-zinc-200 rounded-lg hover:bg-zinc-300 transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- LISTA ADMIN (Direita) -->
+                    <div class="lg:col-span-8 xl:col-span-9">
+                        <div class="bg-white rounded-3xl shadow-lg p-6 border border-zinc-200 min-h-[600px]">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-zinc-800">Gerenciamento de Moldes</h2>
+                                <div class="flex gap-2">
+                                    <button onclick="exportarDados()" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded font-bold hover:bg-emerald-200">Backup</button>
+                                    <label class="text-xs bg-zinc-800 text-white px-3 py-1 rounded font-bold hover:bg-zinc-700 cursor-pointer">
+                                        Restaurar <input type="file" class="hidden" onchange="importarDados(this)">
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="text" id="adminSearchList" oninput="renderAdminList()" placeholder="Filtrar lista de gestão..." class="w-full p-3 mb-4 border border-zinc-300 rounded-xl bg-zinc-50">
+                            
+                            <div id="adminListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Inserido via JS (Cards com botões de editar/excluir) -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PÁGINA 4: CONTROLE DE USUÁRIOS (ADMIN ONLY) -->
+            <section id="view-usuarios" class="view-section hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Form Usuário -->
+                    <div class="md:col-span-1">
+                        <div class="bg-white p-6 rounded-3xl shadow-lg border border-zinc-200">
+                            <h2 class="text-lg font-bold text-zinc-800 mb-4">Novo Usuário</h2>
+                            <form id="userForm" class="space-y-4">
+                                <input type="text" id="newUserName" required placeholder="Nome Completo" class="w-full p-3 bg-zinc-50 border rounded-xl">
+                                <input type="email" id="newUserEmail" required placeholder="Email de Login" class="w-full p-3 bg-zinc-50 border rounded-xl">
+                                <input type="password" id="newUserPass" required placeholder="Senha" class="w-full p-3 bg-zinc-50 border rounded-xl">
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-zinc-500 uppercase mb-1">Nível de Acesso</label>
+                                    <select id="newUserRole" class="w-full p-3 bg-zinc-50 border rounded-xl">
+                                        <option value="user">Usuário Comum (Visualizar)</option>
+                                        <option value="admin">Administrador (Total)</option>
+                                    </select>
+                                </div>
+                                
+                                <button type="submit" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition">Criar Usuário</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lista Usuários -->
+                    <div class="md:col-span-2">
+                        <div class="bg-white p-6 rounded-3xl shadow-lg border border-zinc-200">
+                            <h2 class="text-lg font-bold text-zinc-800 mb-4">Usuários Cadastrados</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="text-xs text-zinc-500 uppercase border-b">
+                                            <th class="pb-2">Nome</th>
+                                            <th class="pb-2">Email</th>
+                                            <th class="pb-2">Cargo</th>
+                                            <th class="pb-2 text-right">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody" class="text-sm text-zinc-700">
+                                        <!-- JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL DE DETALHES DO PRODUTO (Compartilhado) -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-zinc-900 bg-opacity-80 backdrop-blur-sm p-4" onclick="closeModal(event)">
+        <div class="bg-white w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]" onclick="event.stopPropagation()">
+            <!-- Imagem -->
+            <div class="md:w-1/2 bg-zinc-100 flex items-center justify-center p-6 border-r border-zinc-200">
+                <img id="modalImg" src="" class="max-h-[60vh] w-auto object-contain rounded-lg shadow-sm">
+            </div>
+            <!-- Info -->
+            <div class="md:w-1/2 p-8 overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <span id="modalCode" class="bg-zinc-800 text-white text-xs font-bold px-2 py-1 rounded uppercase"></span>
+                        <h2 id="modalName" class="text-3xl font-extrabold text-zinc-800 mt-2 leading-tight"></h2>
+                        <span id="modalCategory" class="text-sm font-bold text-emerald-600 mt-1 block"></span>
+                    </div>
+                    <button onclick="document.getElementById('productModal').classList.remove('flex'); document.getElementById('productModal').classList.add('hidden')" class="p-2 bg-zinc-100 rounded-full hover:bg-zinc-200">
+                        <i data-lucide="x" class="w-5 h-5 text-zinc-500"></i>
+                    </button>
+                </div>
+                
+                <div class="bg-zinc-50 rounded-2xl p-5 border border-zinc-100 space-y-3 mb-6">
+                    <h4 class="text-xs font-bold text-zinc-400 uppercase">Especificações</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><span class="text-xs text-zinc-400 block">Confecção</span><span id="modalConfeccao" class="font-bold text-zinc-700 text-sm"></span></div>
+                        <div><span class="text-xs text-zinc-400 block">Tipo</span><span id="modalTags" class="font-bold text-zinc-700 text-sm"></span></div>
+                        <!-- Bloco Universal Condicional -->
+                        <div class="col-span-2 grid grid-cols-2 gap-4" id="modalUniversalBlock">
+                            <div><span class="text-xs text-zinc-400 block">Gênero</span><span id="modalGenero" class="font-bold text-zinc-700 text-sm"></span></div>
+                            <div><span class="text-xs text-zinc-400 block">Físico</span><span id="modalFisico" class="font-bold text-zinc-700 text-sm"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-bold text-zinc-400 uppercase mb-2">Observações</h4>
+                    <p id="modalObs" class="text-zinc-600 text-sm bg-zinc-50 p-4 rounded-xl border border-zinc-100"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO E DADOS
+        // ==========================================
+        const KEYS = {
+            USERS: 'personalMoldes_users_v1',
+            MOLDES: 'personalMoldes_data_v1',
+            SESSION: 'personalMoldes_session'
+        };
+
+        // LISTA ATUALIZADA CONFORME SOLICITAÇÃO
+        const CATEGORIAS = [
+            "Agasalhos", "Aplicações", "Avental", "Bermudas e Shorts", "Blazers", "Calças", 
+            "Camisas", "Camiseta", "Casacos", "Coletes", "Conjuntos", "Diversos", "Dolma", 
+            "Fardamentos", "Jalecos", "Jaquetas", "Macacão", "Regatas", "Saias", "Top", "Vestidos"
+        ];
+
+        const ROOT_ADMIN = {
+            id: 'root',
+            name: 'Administrador',
+            email: 'kenedy.personalconfeccoes@gmail.com',
+            password: 'Personal610',
+            role: 'admin'
+        };
+
+        let currentUser = null;
+        let moldesCache = [];
+        let usersCache = [];
+
+        // ==========================================
+        // INICIALIZAÇÃO
+        // ==========================================
+        function init() {
+            loadUsers();
+            loadMoldes();
+            
+            const sessionUser = JSON.parse(localStorage.getItem(KEYS.SESSION));
+            if (sessionUser) {
+                loginUser(sessionUser, true);
+            } else {
+                showLogin();
+            }
+
+            // Popular Selects
+            const selects = [document.getElementById('catFiltroTipo'), document.getElementById('adminCategoriaPeca')];
+            selects.forEach(sel => {
+                // Limpar opções antigas (exceto a primeira)
+                while(sel.options.length > 1) sel.remove(1);
+                
+                CATEGORIAS.sort().forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.innerText = cat;
+                    sel.appendChild(opt);
+                });
+            });
+
+            // Listener especial para categoria "Diversos"
+            document.getElementById('adminCategoriaPeca').addEventListener('change', function() {
+                const isDiversos = this.value === 'Diversos';
+                const universalWrapper = document.getElementById('adminUniversalSectionWrapper');
+                const universalCheck = document.getElementById('adminCatUniversal');
+                const notice = document.getElementById('diversosNotice');
+
+                if (isDiversos) {
+                    // Desativa e desmarca Universal
+                    universalCheck.checked = false;
+                    universalCheck.disabled = true;
+                    universalWrapper.classList.add('disabled-section');
+                    document.getElementById('adminUniversalOptions').classList.add('hidden');
+                    notice.classList.remove('hidden');
+                } else {
+                    // Restaura
+                    universalCheck.disabled = false;
+                    universalWrapper.classList.remove('disabled-section');
+                    notice.classList.add('hidden');
+                }
+            });
+
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // SISTEMA DE USUÁRIOS
+        // ==========================================
+        function loadUsers() {
+            const stored = localStorage.getItem(KEYS.USERS);
+            usersCache = stored ? JSON.parse(stored) : [];
+            const rootExists = usersCache.find(u => u.email === ROOT_ADMIN.email);
+            if (!rootExists) { usersCache.push(ROOT_ADMIN); saveUsers(); }
+        }
+        function saveUsers() { localStorage.setItem(KEYS.USERS, JSON.stringify(usersCache)); }
+
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const user = usersCache.find(u => u.email === email && u.password === pass);
+            if (user) loginUser(user);
+            else {
+                const err = document.getElementById('loginError');
+                err.innerText = "Usuário ou senha incorretos.";
+                err.classList.remove('hidden');
+            }
+        });
+
+        function loginUser(user, fromSession = false) {
+            currentUser = user;
+            if (!fromSession) localStorage.setItem(KEYS.SESSION, JSON.stringify(user));
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('flex');
+            document.getElementById('userNameDisplay').innerText = user.name;
+            document.getElementById('userRoleDisplay').innerText = user.role === 'admin' ? 'Administrador' : 'Usuário';
+            const adminElements = document.querySelectorAll('.admin-only');
+            adminElements.forEach(el => {
+                if (user.role === 'admin') el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+            navegarPara('home');
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem(KEYS.SESSION);
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+        }
+        
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('flex');
+        }
+
+        document.getElementById('userForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('newUserName').value;
+            const email = document.getElementById('newUserEmail').value;
+            const pass = document.getElementById('newUserPass').value;
+            const role = document.getElementById('newUserRole').value;
+            if (usersCache.find(u => u.email === email)) { showToast("Email já cadastrado!", "error"); return; }
+            usersCache.push({ id: Date.now(), name, email, password: pass, role });
+            saveUsers(); renderUsersTable();
+            document.getElementById('userForm').reset(); showToast("Usuário criado!");
+        });
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            usersCache.forEach(u => {
+                const isRoot = u.email === ROOT_ADMIN.email;
+                const tr = document.createElement('tr');
+                tr.className = "border-b last:border-0 hover:bg-zinc-50";
+                tr.innerHTML = `
+                    <td class="py-3 font-medium">${u.name} ${isRoot ? '(Você)' : ''}</td>
+                    <td class="py-3 text-zinc-500">${u.email}</td>
+                    <td class="py-3"><span class="px-2 py-1 rounded text-xs font-bold ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-zinc-100 text-zinc-600'}">${u.role.toUpperCase()}</span></td>
+                    <td class="py-3 text-right">${!isRoot ? `<button onclick="deleteUser(${u.id})" class="text-rose-500 hover:text-rose-700 text-xs font-bold">Excluir</button>` : ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteUser(id) {
+            if(confirm("Excluir usuário?")) { usersCache = usersCache.filter(u => u.id !== id); saveUsers(); renderUsersTable(); }
+        }
+
+        // ==========================================
+        // NAVEGAÇÃO
+        // ==========================================
+        function navegarPara(viewId) {
+            if ((viewId === 'modelagem' || viewId === 'usuarios') && currentUser.role !== 'admin') { showToast("Acesso Negado!", "error"); return; }
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.dataset.target === viewId) btn.classList.add('bg-zinc-800');
+                else btn.classList.remove('bg-zinc-800');
+            });
+            if (viewId === 'home') renderHome();
+            if (viewId === 'catalogo') renderCatalogo();
+            if (viewId === 'modelagem') renderAdminList();
+            if (viewId === 'usuarios') renderUsersTable();
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // GESTÃO DE MOLDES
+        // ==========================================
+        function loadMoldes() {
+            const data = localStorage.getItem(KEYS.MOLDES);
+            moldesCache = data ? JSON.parse(data) : [];
+        }
+        function saveMoldes() { localStorage.setItem(KEYS.MOLDES, JSON.stringify(moldesCache)); }
+
+        async function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_W = 800;
+                        const scale = MAX_W / img.width;
+                        canvas.width = MAX_W;
+                        canvas.height = img.height * scale;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    }
+                };
+            });
+        }
+
+        // ==========================================
+        // VIEW: HOME
+        // ==========================================
+        function renderHome() {
+            const container = document.getElementById('homeRecentGrid');
+            container.innerHTML = '';
+            const latest = [...moldesCache].reverse().slice(0, 4);
+            latest.forEach(item => { container.innerHTML += createCardHTML(item, false); });
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // VIEW: CATÁLOGO
+        // ==========================================
+        let catalogoViewMode = 'grade';
+        function mudarVisualizacaoCatalogo(mode) {
+            catalogoViewMode = mode;
+            const btnGrade = document.getElementById('btnViewGrade');
+            const btnLista = document.getElementById('btnViewLista');
+            const grid = document.getElementById('catalogoGrid');
+            const list = document.getElementById('catalogoLista');
+            if (mode === 'grade') {
+                btnGrade.classList.add('bg-zinc-100', 'text-zinc-600'); btnGrade.classList.remove('bg-white', 'text-zinc-400');
+                btnLista.classList.add('bg-white', 'text-zinc-400'); btnLista.classList.remove('bg-zinc-100', 'text-zinc-600');
+                grid.classList.remove('hidden'); list.classList.add('hidden');
+            } else {
+                btnLista.classList.add('bg-zinc-100', 'text-zinc-600'); btnLista.classList.remove('bg-white', 'text-zinc-400');
+                btnGrade.classList.add('bg-white', 'text-zinc-400'); btnGrade.classList.remove('bg-zinc-100', 'text-zinc-600');
+                grid.classList.add('hidden'); list.classList.remove('hidden');
+            }
+        }
+
+        function renderCatalogo(items = null) {
+            const list = items || moldesCache;
+            const gridContainer = document.getElementById('catalogoGrid');
+            const listContainer = document.getElementById('catalogoLista');
+            const emptyMsg = document.getElementById('catalogoVazio');
+            gridContainer.innerHTML = ''; listContainer.innerHTML = '';
+            if (list.length === 0) { emptyMsg.classList.remove('hidden'); return; } 
+            else { emptyMsg.classList.add('hidden'); }
+            list.forEach(item => {
+                gridContainer.innerHTML += createCardHTML(item, false);
+                const li = document.createElement('div');
+                li.className = "flex items-center p-4 bg-white rounded-xl border border-zinc-100 shadow-sm hover:border-emerald-400 cursor-pointer transition";
+                li.onclick = () => openProductModal(item.id);
+                li.innerHTML = `
+                    <img src="${item.fotoBase64}" class="w-12 h-12 rounded object-cover bg-zinc-100">
+                    <div class="ml-4 flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-zinc-800">${item.codigo}</span>
+                            <span class="text-xs font-bold text-emerald-600 uppercase">${item.categoriaPeca}</span>
+                        </div>
+                        <h4 class="font-bold text-zinc-600 text-sm">${item.nome}</h4>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-zinc-300"></i>
+                `;
+                listContainer.appendChild(li);
+            });
+            lucide.createIcons();
+        }
+
+        function aplicarFiltrosCatalogo() {
+            const text = document.getElementById('catSearchInput').value.toLowerCase();
+            const tipo = document.getElementById('catFiltroTipo').value;
+            const genero = document.getElementById('catFiltroGenero').value;
+            const fisico = document.getElementById('catFiltroFisico').value;
+
+            const filtrados = moldesCache.filter(item => {
+                const matchText = item.nome.toLowerCase().includes(text) || item.codigo.toLowerCase().includes(text);
+                const matchTipo = tipo ? item.categoriaPeca === tipo : true;
+                
+                // Regra de Diversos: Filtros de gênero/físico não se aplicam a ele,
+                // então se a pessoa selecionar "Diversos", não deve filtrar por gênero (ou ignorar gênero).
+                // Se a pessoa selecionar um gênero, itens "Diversos" (que não têm gênero) não devem aparecer.
+                const uni = item.classificacao.universalDetails || {};
+                const itemIsDiversos = item.categoriaPeca === 'Diversos';
+                
+                let matchGenero = true;
+                let matchFisico = true;
+
+                if (!itemIsDiversos) {
+                    if (genero) matchGenero = uni.genero === genero;
+                    if (fisico) matchFisico = uni.fisico === fisico;
+                } else {
+                    // Se item é Diversos e usuário filtrou por Gênero específico, ele não deve aparecer
+                    // pois Diversos não tem gênero.
+                    if (genero || fisico) return false;
+                }
+
+                return matchText && matchTipo && matchGenero && matchFisico;
+            });
+
+            renderCatalogo(filtrados);
+        }
+
+        function limparFiltrosCatalogo() {
+            document.getElementById('catSearchInput').value = '';
+            document.getElementById('catFiltroTipo').value = '';
+            document.getElementById('catFiltroGenero').value = '';
+            document.getElementById('catFiltroFisico').value = '';
+            renderCatalogo();
+        }
+
+        // ==========================================
+        // VIEW: CONTROLE MODELAGEM (ADMIN)
+        // ==========================================
+        function toggleAdminUniversalOpts() {
+            const chk = document.getElementById('adminCatUniversal');
+            const div = document.getElementById('adminUniversalOptions');
+            if (chk.checked) div.classList.remove('hidden'); else div.classList.add('hidden');
+        }
+
+        function updateFileName(input) {
+            const span = document.getElementById('adminFileName');
+            if(input.files && input.files[0]) {
+                span.innerText = input.files[0].name;
+                span.classList.add('text-emerald-600');
+            } else {
+                span.innerText = "Clique para foto";
+                span.classList.remove('text-emerald-600');
+            }
+        }
+
+        document.getElementById('adminFormFichamento').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('adminFichaId').value;
+            const codigo = document.getElementById('adminCodigo').value.toUpperCase();
+            const nome = document.getElementById('adminNome').value;
+            const categoria = document.getElementById('adminCategoriaPeca').value;
+            if(!categoria) { showToast("Selecione a Categoria", "error"); return; }
+
+            // Lógica Diversos no Submit
+            const isDiversos = categoria === 'Diversos';
+            const isUniversal = !isDiversos && document.getElementById('adminCatUniversal').checked;
+            
+            const isPersonalizada = document.getElementById('adminCatPersonalizada').checked;
+            const confeccaoEl = document.querySelector('input[name="adminTipoConfeccao"]:checked');
+            if(!confeccaoEl) { showToast("Selecione Sublimada ou Direta", "error"); return; }
+            
+            const universalDetails = isUniversal ? {
+                genero: document.getElementById('adminUnivGenero').value,
+                fisico: document.getElementById('adminUnivFisico').value,
+                manga: document.getElementById('adminUnivManga').value,
+                gola: document.getElementById('adminUnivGola').value
+            } : {};
+
+            const fileInput = document.getElementById('adminFoto');
+            let fotoBase64 = null;
+            if(fileInput.files[0]) {
+                fotoBase64 = await compressImage(fileInput.files[0]);
+            } else if (id) {
+                const old = moldesCache.find(m => m.id == id);
+                if(old) fotoBase64 = old.fotoBase64;
+            }
+            if(!fotoBase64) { showToast("Foto Obrigatória", "error"); return; }
+
+            const newData = {
+                id: id ? parseInt(id) : Date.now(),
+                codigo, nome, categoriaPeca: categoria,
+                comentarios: document.getElementById('adminComentarios').value,
+                fotoBase64,
+                classificacao: {
+                    isUniversal, isPersonalizada, 
+                    tipoConfeccao: confeccaoEl.value,
+                    universalDetails
+                },
+                createdAt: new Date().toISOString()
+            };
+
+            if(id) {
+                const idx = moldesCache.findIndex(m => m.id == id);
+                moldesCache[idx] = newData;
+                showToast("Atualizado!");
+            } else {
+                if(moldesCache.some(m => m.codigo === codigo)) { showToast("Código Duplicado", "error"); return; }
+                moldesCache.unshift(newData);
+                showToast("Cadastrado!");
+            }
+            saveMoldes(); resetAdminForm(); renderAdminList();
+        });
+
+        function renderAdminList() {
+            const term = document.getElementById('adminSearchList').value.toLowerCase();
+            const container = document.getElementById('adminListContainer');
+            container.innerHTML = '';
+            const filtered = moldesCache.filter(m => m.nome.toLowerCase().includes(term) || m.codigo.toLowerCase().includes(term));
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "flex items-center bg-white p-3 rounded-xl border border-zinc-200 shadow-sm";
+                div.innerHTML = `
+                    <img src="${item.fotoBase64}" class="w-16 h-16 rounded-lg object-cover bg-zinc-100">
+                    <div class="ml-3 flex-1">
+                        <div class="font-bold text-zinc-800 text-sm">${item.codigo}</div>
+                        <div class="text-xs text-zinc-500 truncate w-32">${item.nome}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editMolde(${item.id})" class="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="deleteMolde(${item.id})" class="p-2 bg-rose-50 text-rose-600 rounded hover:bg-rose-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function editMolde(id) {
+            const item = moldesCache.find(m => m.id === id);
+            if(!item) return;
+
+            document.getElementById('adminFichaId').value = item.id;
+            document.getElementById('adminCodigo').value = item.codigo;
+            document.getElementById('adminNome').value = item.nome;
+            
+            const catSelect = document.getElementById('adminCategoriaPeca');
+            catSelect.value = item.categoriaPeca;
+            // Disparar evento manualmente para ativar logica de "Diversos"
+            catSelect.dispatchEvent(new Event('change'));
+
+            document.getElementById('adminComentarios').value = item.comentarios;
+
+            const cls = item.classificacao;
+            // Só marca Universal se não for Diversos e tiver dados
+            if (item.categoriaPeca !== 'Diversos') {
+                document.getElementById('adminCatUniversal').checked = cls.isUniversal;
+                toggleAdminUniversalOpts();
+                if(cls.isUniversal && cls.universalDetails) {
+                    document.getElementById('adminUnivGenero').value = cls.universalDetails.genero;
+                    document.getElementById('adminUnivFisico').value = cls.universalDetails.fisico;
+                    document.getElementById('adminUnivManga').value = cls.universalDetails.manga;
+                    document.getElementById('adminUnivGola').value = cls.universalDetails.gola;
+                }
+            }
+            
+            document.getElementById('adminCatPersonalizada').checked = cls.isPersonalizada;
+            const radios = document.getElementsByName('adminTipoConfeccao');
+            radios.forEach(r => { if(r.value === cls.tipoConfeccao) r.checked = true; });
+
+            document.getElementById('adminFileName').innerText = "Manter atual...";
+            document.getElementById('adminFormTitle').innerText = "Editando: " + item.codigo;
+            window.scrollTo({top:0, behavior:'smooth'});
+        }
+
+        function deleteMolde(id) {
+            if(confirm("Tem certeza?")) { moldesCache = moldesCache.filter(m => m.id !== id); saveMoldes(); renderAdminList(); }
+        }
+
+        function resetAdminForm() {
+            document.getElementById('adminFormFichamento').reset();
+            document.getElementById('adminFichaId').value = '';
+            document.getElementById('adminFileName').innerText = "Clique para foto";
+            document.getElementById('adminFormTitle').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i> Cadastrar Molde`;
+            // Resetar estado de "Diversos"
+            document.getElementById('adminCategoriaPeca').dispatchEvent(new Event('change'));
+            toggleAdminUniversalOpts();
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // UTILITÁRIOS
+        // ==========================================
+        function createCardHTML(item, isAdminContext) {
+            const catBadge = `<span class="absolute top-2 right-2 bg-white/90 backdrop-blur text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm border border-emerald-100 uppercase tracking-wide">${item.categoriaPeca}</span>`;
+            return `
+            <div onclick="openProductModal(${item.id})" class="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden cursor-pointer card-hover group">
+                <div class="relative">
+                    <img src="${item.fotoBase64}" class="miniatura-card bg-zinc-100">
+                    <div class="absolute top-2 left-2 bg-zinc-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-md">${item.codigo}</div>
+                    ${catBadge}
+                </div>
+                <div class="p-4">
+                    <h3 class="font-bold text-zinc-700 truncate">${item.nome}</h3>
+                    <div class="flex gap-1 mt-2 flex-wrap">
+                        ${item.classificacao.isUniversal ? '<span class="text-[10px] bg-blue-50 text-blue-600 px-1 rounded border border-blue-100 font-bold">UNI</span>' : ''}
+                        ${item.classificacao.isPersonalizada ? '<span class="text-[10px] bg-purple-50 text-purple-600 px-1 rounded border border-purple-100 font-bold">PERS</span>' : ''}
+                        <span class="text-[10px] bg-zinc-100 text-zinc-600 px-1 rounded border border-zinc-200 font-bold uppercase">${item.classificacao.tipoConfeccao === 'sublimada' ? 'Sublimada' : 'Direta'}</span>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+
+        function openProductModal(id) {
+            const item = moldesCache.find(i => i.id === id);
+            if(!item) return;
+            const uni = item.classificacao.universalDetails || {};
+            document.getElementById('modalImg').src = item.fotoBase64;
+            document.getElementById('modalCode').innerText = item.codigo;
+            document.getElementById('modalName').innerText = item.nome;
+            document.getElementById('modalCategory').innerText = item.categoriaPeca;
+            document.getElementById('modalConfeccao').innerText = item.classificacao.tipoConfeccao.toUpperCase();
+            
+            const modalUniversalBlock = document.getElementById('modalUniversalBlock');
+            // Logica visual para Diversos no Modal
+            if (item.categoriaPeca === 'Diversos') {
+                modalUniversalBlock.classList.add('hidden');
+            } else {
+                modalUniversalBlock.classList.remove('hidden');
+                document.getElementById('modalGenero').innerText = uni.genero || '-';
+                document.getElementById('modalFisico').innerText = uni.fisico || '-';
+            }
+            
+            let tags = [];
+            if(item.classificacao.isUniversal) tags.push("Universal");
+            if(item.classificacao.isPersonalizada) tags.push("Personalizada");
+            document.getElementById('modalTags').innerText = tags.length > 0 ? tags.join(', ') : 'Padrão';
+            document.getElementById('modalObs').innerText = item.comentarios || "Sem observações.";
+            document.getElementById('productModal').classList.remove('hidden');
+            document.getElementById('productModal').classList.add('flex');
+        }
+        
+        function closeModal(e) {
+            if (e.target.id === 'productModal') {
+                e.target.classList.add('hidden');
+                e.target.classList.remove('flex');
+            }
+        }
+
+        function showToast(msg, type="success") {
+            const div = document.createElement('div');
+            div.className = `fixed bottom-4 right-4 px-6 py-4 rounded-xl shadow-2xl text-white font-bold z-50 transition transform translate-y-10 opacity-0 ${type === 'error' ? 'bg-rose-500' : 'bg-zinc-800'}`;
+            div.innerText = msg;
+            document.body.appendChild(div);
+            requestAnimationFrame(() => { div.classList.remove('translate-y-10', 'opacity-0'); });
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        window.exportarDados = function() {
+            const data = { moldes: moldesCache, users: usersCache };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `backup_personalmoldes_${Date.now()}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        };
+
+        window.importarDados = function(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (json.moldes && json.users) {
+                        if(confirm("Restaurar backup completo?")) {
+                            moldesCache = json.moldes; usersCache = json.users;
+                            saveMoldes(); saveUsers(); location.reload();
+                        }
+                    }
+                } catch(err) { showToast('Arquivo inválido', 'error'); }
+            };
+            reader.readAsText(file);
+        };
+
+        init();
+    </script>
+</body>
+</html>

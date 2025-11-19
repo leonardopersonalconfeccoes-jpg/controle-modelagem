@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Modelagem</title>
+    <!-- Carrega o Tailwind CSS para um estilo moderno e responsivo --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Define a fonte Inter e cores de fundo */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
+        /* Estilo para a miniatura na lista */
+        .miniatura { 
+            width: 60px; 
+            height: 60px; 
+            object-fit: cover; 
+            border-radius: 8px; 
+            border: 1px solid #e2e8f0;
+        }
+        /* Estilo para a linha do item (para indicar que é clicável) */
+        .ficha-item:hover { 
+            background-color: #eef2ff; 
+            cursor: pointer;
+        }
+        /* Estilo do Modal de Detalhes */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5);
+        }
+        /* Estilo para a célula de status na tabela de input */
+        .status-cell {
+            cursor: pointer;
+            transition: background-color 0.15s;
+            border-radius: 4px;
+        }
+        .status-cell:hover {
+            opacity: 0.85;
+        }
+
+        /* --- Estilos para Impressão --- */
+        @media print {
+            body > *:not(.print-area) { 
+                display: none !important; /* Esconde tudo, exceto a área de impressão */
+            }
+            .modal-content {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                box-shadow: none !important;
+                background-color: #fff !important;
+                position: static !important;
+                display: block !important;
+            }
+            .modal-content button, .modal-content .close { /* Esconde botões de fechar/editar/excluir/imprimir no print */
+                display: none !important;
+            }
+            .modal { /* Remove o background escuro do modal na impressão */
+                background-color: transparent !important;
+                position: static !important;
+                overflow: visible !important;
+                display: block !important;
+            }
+            #fotoAmpliada {
+                max-width: 100% !important; /* Garante que a imagem se ajuste na impressão */
+                height: auto !important;
+            }
+            .flex-col.md\:flex-row {
+                flex-direction: column !important; /* Garante que os itens fiquem um abaixo do outro */
+            }
+            .md\:w-1\/2 {
+                width: 100% !important;
+            }
+            h3.text-2xl {
+                font-size: 1.5rem !important; /* Ajusta tamanho do título para impressão */
+            }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl p-6 lg:p-10">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Controle de Modelagem</h1>
+
+        <!-- SEÇÃO DE CADASTRO E EDIÇÃO --><section class="mb-8 p-6 bg-indigo-50 rounded-lg shadow-md">
+            <h2 id="formTitle" class="text-xl font-semibold text-indigo-800 mb-4">Cadastrar Nova Ficha</h2>
+            
+            <!-- Formulário --><form id="formFichamento" class="space-y-4">
+                <input type="hidden" id="fichaId"> <!-- ID da ficha em edição --><input type="hidden" id="statusData"> <!-- Dados de status (Molde/Sacola x Tamanhos) --><!-- Campo Código (AGORA EM MAIÚSCULAS) --><div>
+                    <label for="codigo" class="block text-sm font-medium text-gray-700">Código do Molde:</label>
+                    <input type="text" id="codigo" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                           oninput="this.value = this.value.toUpperCase()"> <!-- Garante que o usuário digite em maiúsculas --></div>
+                
+                <!-- TABELA DE STATUS DE PRODUÇÃO --><div class="mt-4 p-4 bg-white rounded-lg shadow">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Status de Produção por Tamanho:</h3>
+                    <div id="statusTableContainer">
+                        <!-- Tabela de status será renderizada aqui pelo JS --></div>
+                    <p class="text-xs text-gray-500 mt-2">Clique em cada tamanho para alternar o status: Vermelho (Não feito) &rarr; Amarelo (Feito, Não impresso) &rarr; Verde (Impresso)</p>
+                </div>
+                <!-- FIM TABELA DE STATUS DE PRODUÇÃO --><!-- Campo Nome --><div>
+                    <label for="nome" class="block text-sm font-medium text-gray-700">Nome/Descrição:</label>
+                    <input type="text" id="nome" required 
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <!-- CAMPO: COMENTÁRIOS --><div>
+                    <label for="comentarios" class="block text-sm font-medium text-gray-700">Comentários/Observações:</label>
+                    <textarea id="comentarios" rows="3"
+                              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                <!-- FIM CAMPO --><!-- Campo Foto --><div>
+                    <label for="foto" class="block text-sm font-medium text-gray-700">Foto do Molde:</label>
+                    <input type="file" id="foto" accept="image/*" 
+                           class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
+                    <p id="fotoHint" class="text-xs text-gray-500 mt-1">Se estiver editando, deixe em branco para manter a foto atual.</p>
+                </div>
+
+                <!-- Botão de Salvar/Atualizar --><button type="submit" id="submitButton"
+                        class="w-full sm:w-auto px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                    Salvar Ficha
+                </button>
+                <button type="button" id="cancelEditButton" onclick="cancelarEdicao()" 
+                        class="w-full sm:w-auto px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-indigo-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition duration-150 ease-in-out hidden">
+                    Cancelar Edição
+                </button>
+            </form>
+        </section>
+
+        <!-- SEÇÃO DE PESQUISA E LISTAGEM --><section>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Fichas Cadastradas</h2>
+            
+            <!-- Barra de Pesquisa --><div class="mb-6">
+                <input type="text" id="barraPesquisa" placeholder="🔍 Pesquisar por Código ou Nome..."
+                       class="block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <!-- Lista de Fichas (Tabela Simulada) --><div id="listaFichas" class="space-y-3">
+                <!-- As fichas serão injetadas aqui pelo JavaScript --></div>
+            
+            <p id="noResults" class="text-center text-gray-500 mt-6 hidden">Nenhuma ficha encontrada.</p>
+        </section>
+
+    </div>
+
+    <!-- MODAL DE VISUALIZAÇÃO DETALHADA --><div id="modalDetalhes" class="modal">
+        <div class="modal-content bg-white rounded-xl shadow-2xl p-6 relative max-w-4xl w-11/12 print-area">
+            
+            <!-- Botão Fechar --><button onclick="fecharModal()" class="absolute top-3 right-3 text-3xl font-light text-gray-500 hover:text-gray-900 transition duration-150">&times;</button>
+            
+            <!-- Layout do Conteúdo Detalhado --><div class="flex flex-col md:flex-row gap-6">
+                <!-- Foto Ampliada (Lado Esquerdo) --><div class="flex-shrink-0 md:w-1/2">
+                    <img id="fotoAmpliada" src="" alt="Foto Ampliada do Molde" 
+                         class="w-full h-auto object-cover rounded-lg shadow-lg max-h-[400px]">
+                </div>
+
+                <!-- Informações e Ações (Lado Direito) --><div class="md:w-1/2">
+                    <!-- TÍTULO DA FICHA COM NOME DO MOLDE --><h3 id="detalheTituloFicha" class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2"></h3>
+                    
+                    <p class="text-lg mb-2"><strong>Código:</strong> <span id="detalheCodigo" class="font-medium text-indigo-600"></span></p>
+
+                    <!-- TABELA DE STATUS DE PRODUÇÃO (Visualização) --><div class="mt-4 mb-4 p-4 bg-gray-100 rounded-lg shadow-inner">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">Status de Produção:</h3>
+                        <div id="detalheStatusContainer">
+                            <!-- Tabela de status será renderizada aqui pelo JS --></div>
+                    </div>
+                    <!-- FIM TABELA DE STATUS DE PRODUÇÃO --><p class="text-lg mb-4"><strong>Nome:</strong> <span id="detalheNome" class="text-gray-700"></span></p>
+
+                    <!-- CAMPO: DETALHE COMENTÁRIOS (AGORA RENDERIZA LINKS) --><div class="mt-4 p-3 bg-gray-50 rounded-lg border">
+                        <strong class="block text-sm font-medium text-gray-700">Comentários:</strong>
+                        <p id="detalheComentarios" class="text-gray-600 text-sm mt-1"></p> 
+                    </div>
+                    <!-- FIM CAMPO --><!-- Botões de Ação --><div class="space-y-3 mt-6">
+                        <button onclick="abrirEdicaoDoModal()"
+                                class="w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-150">
+                            ✏️ Alterar (Editar)
+                        </button>
+                        <button onclick="excluirFicha()"
+                                class="w-full px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition duration-150">
+                            🗑️ Excluir
+                        </button>
+                        <!-- NOVO BOTÃO DE IMPRIMIR --><button onclick="imprimirFicha()"
+                                class="w-full px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition duration-150">
+                            🖨️ Imprimir Ficha
+                        </button>
+                        <!-- FIM NOVO BOTÃO DE IMPRIMIR --></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const STORAGE_KEY = 'controleModelagemFichas';
+        const form = document.getElementById('formFichamento');
+        const listaFichasDiv = document.getElementById('listaFichas');
+        const barraPesquisa = document.getElementById('barraPesquisa');
+        const modal = document.getElementById('modalDetalhes');
+        const submitButton = document.getElementById('submitButton');
+        const formTitle = document.getElementById('formTitle');
+        const cancelEditButton = document.getElementById('cancelEditButton');
+        const fotoInput = document.getElementById('foto');
+        const fotoHint = document.getElementById('fotoHint');
+        const noResults = document.getElementById('noResults');
+        const comentariosInput = document.getElementById('comentarios'); 
+        
+        // Novos elementos para status
+        const statusTableContainer = document.getElementById('statusTableContainer');
+        const statusDataInput = document.getElementById('statusData');
+        const detalheStatusContainer = document.getElementById('detalheStatusContainer');
+        // Elemento para o título da ficha no modal
+        const detalheTituloFicha = document.getElementById('detalheTituloFicha');
+
+        const TAMANHOS = ['PP', 'P', 'M', 'G', 'GG', 'EXG'];
+        const ITENS_STATUS = ['molde', 'sacola'];
+        // V=Verde (Impresso), A=Amarelo (Feito, Não impresso), R=Vermelho (Não feito)
+        const STATUS_MAP = {
+            'R': { class: 'bg-red-500', desc: 'Não feito' },
+            'A': { class: 'bg-yellow-500', desc: 'Feito, Não impresso' },
+            'V': { class: 'bg-green-500', desc: 'Impresso' }
+        };
+        const STATUS_ORDER = ['R', 'A', 'V'];
+
+        let currentEditingId = null; 
+        let lastLoadedFicha = null; 
+        let currentStatus = getDefaultStatus(); // Estado temporário para o formulário
+
+        /** Retorna o objeto de status padrão (Tudo como 'R' - Não feito). */
+        function getDefaultStatus() {
+            const status = {};
+            ITENS_STATUS.forEach(item => {
+                status[item] = {};
+                TAMANHOS.forEach(tamanho => {
+                    status[item][tamanho] = 'R';
+                });
+            });
+            return status;
+        }
+
+        /** Mapeia o código de status para a classe de cor do Tailwind. */
+        function getStatusColorClass(code) {
+            return STATUS_MAP[code] ? STATUS_MAP[code].class : 'bg-gray-300';
+        }
+
+        // --- Funções de Armazenamento (localStorage) ---
+        
+        /** Busca todas as fichas salvas no localStorage. */
+        function getFichas() {
+            try {
+                const fichasJSON = localStorage.getItem(STORAGE_KEY);
+                let fichas = fichasJSON ? JSON.parse(fichasJSON) : [];
+                
+                // Limpeza/Garantia: Garante que o campo status existe ao carregar
+                return fichas.map(ficha => {
+                    ficha.status = ficha.status || getDefaultStatus();
+                    delete ficha.categoria; // Limpeza de dados antigos
+                    return ficha;
+                });
+            } catch (error) {
+                console.error("Erro ao carregar fichas do localStorage:", error);
+                return [];
+            }
+        }
+
+        /** Salva a lista completa de fichas no localStorage. */
+        function salvarFichas(fichas) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(fichas));
+            } catch (error) {
+                console.error("Erro ao salvar fichas no localStorage:", error);
+                if (error.code === 22 || error.name === 'QuotaExceededError') {
+                    console.error('Erro: Espaço de armazenamento local (offline) esgotado. Não foi possível salvar a ficha.');
+                }
+            }
+        }
+
+        // --- Leitura de Arquivo (Base64 para Offline) ---
+
+        /** Converte o arquivo de imagem para Base64. */
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- Funções de Status (Formulário) ---
+
+        /** Altera o status da célula e atualiza o estado interno. */
+        function toggleStatus(item, tamanho, element) {
+            const currentCode = currentStatus[item][tamanho];
+            const currentIndex = STATUS_ORDER.indexOf(currentCode);
+            // Próximo status na ordem (R -> A -> V -> R)
+            const nextIndex = (currentIndex + 1) % STATUS_ORDER.length;
+            const nextCode = STATUS_ORDER[nextIndex];
+
+            // 1. Atualiza o estado interno
+            currentStatus[item][tamanho] = nextCode;
+
+            // 2. Atualiza o input hidden para salvar
+            statusDataInput.value = JSON.stringify(currentStatus);
+            
+            // 3. Atualiza a cor visualmente
+            element.className = element.className.split(' ').filter(c => !c.startsWith('bg-')).join(' ');
+            element.classList.add(getStatusColorClass(nextCode));
+        }
+
+        /** Renderiza a tabela de status no formulário. */
+        function renderStatusForm(status) {
+            currentStatus = status;
+            statusDataInput.value = JSON.stringify(status); // Preenche o hidden input
+
+            let html = '<table class="w-full border-collapse text-center text-sm">';
+            
+            // Cabeçalho (Tamanhos)
+            html += '<thead><tr class="bg-gray-200"><th class="py-2 px-1 border border-gray-300">Item</th>';
+            TAMANHOS.forEach(t => {
+                html += `<th class="py-2 px-1 border border-gray-300">${t}</th>`;
+            });
+            html += '</tr></thead>';
+
+            // Corpo (Itens Molde e Sacola)
+            html += '<tbody>';
+            ITENS_STATUS.forEach(item => {
+                const itemLabel = item.charAt(0).toUpperCase() + item.slice(1); // Molde, Sacola
+                html += `<tr><td class="py-2 px-1 border border-gray-300 font-medium text-left">${itemLabel}</td>`;
+                TAMANHOS.forEach(t => {
+                    const code = status[item][t];
+                    const colorClass = getStatusColorClass(code);
+                    const cellId = `status-cell-${item}-${t}`;
+                    
+                    html += `<td id="${cellId}" data-item="${item}" data-tamanho="${t}" 
+                                   onclick="toggleStatus('${item}', '${t}', this)"
+                                   class="status-cell py-2 px-1 border border-gray-300 ${colorClass}">
+                                   ${t}
+                             </td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            
+            statusTableContainer.innerHTML = html;
+        }
+
+        // --- Funções de Visualização (Modal) ---
+
+        /** Renderiza a tabela de status no modal de detalhes. */
+        function renderStatusDetails(status) {
+            let html = '<table class="w-full border-collapse text-center text-sm">';
+            
+            // Cabeçalho (Tamanhos)
+            html += '<thead><tr class="bg-gray-200"><th class="py-2 px-1 border border-gray-300">Item</th>';
+            TAMANHOS.forEach(t => {
+                html += `<th class="py-2 px-1 border border-gray-300">${t}</th>`;
+            });
+            html += '</tr></thead>';
+
+            // Corpo (Itens Molde e Sacola)
+            html += '<tbody>';
+            ITENS_STATUS.forEach(item => {
+                const itemLabel = item.charAt(0).toUpperCase() + item.slice(1);
+                html += `<tr><td class="py-2 px-1 border border-gray-300 font-medium text-left">${itemLabel}</td>`;
+                TAMANHOS.forEach(t => {
+                    const code = status[item][t];
+                    const colorClass = getStatusColorClass(code);
+                    const description = STATUS_MAP[code] ? STATUS_MAP[code].desc : '';
+                    
+                    html += `<td class="py-2 px-1 border border-gray-300 font-bold ${colorClass}" 
+                                   title="${description} para ${t}">
+                                   ${t}
+                             </td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            
+            detalheStatusContainer.innerHTML = html;
+        }
+
+        // --- Funções de Interação (Links nos Comentários) ---
+
+        /** * Abre o modal de visualização detalhada de uma ficha específica 
+         * buscando pelo código do molde.
+         */
+        function abrirModalByCode(code) {
+            const fichas = getFichas();
+            const ficha = fichas.find(f => f.codigo === code);
+            
+            if (ficha) {
+                fecharModal(); // Fecha o modal atual antes de abrir o novo
+                abrirModal(ficha.id);
+            } else {
+                console.error(`Código de molde '${code}' não encontrado no cadastro.`);
+                // Mensagem visual para o usuário
+                // Usando console.log em vez de alert por boa prática, mas mantendo a simplicidade para o ambiente
+                console.log(`O código de molde '${code}' não está cadastrado.`);
+                
+            }
+        }
+
+        /** * Converte códigos de molde nos comentários em links clicáveis. */
+        function processarComentarios(text) {
+            if (!text) return 'Nenhum comentário adicionado.';
+
+            let htmlText = text.replace(/\n/g, '<br>');
+            
+            // Regex para códigos de molde: \b([A-Z]{1,}[A-Z0-9]{2,})\b
+            const moldCodeRegex = /\b([A-Z]{1,}[A-Z0-9]{2,})\b/g; 
+            
+            const processedText = htmlText.replace(moldCodeRegex, (match, code) => {
+                const uppercaseCode = code.toUpperCase(); 
+                return `<a href="#" onclick="event.preventDefault(); abrirModalByCode('${uppercaseCode}');" class="text-blue-600 hover:text-blue-800 font-semibold underline transition duration-150">${match}</a>`;
+            });
+
+            return processedText;
+        }
+
+
+        // --- Evento de Envio do Formulário ---
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Garante que o código seja salvo sempre em MAIÚSCULAS
+            const codigo = document.getElementById('codigo').value.trim().toUpperCase();
+            const nome = document.getElementById('nome').value.trim();
+            const comentarios = comentariosInput.value.trim(); 
+            const arquivoFoto = fotoInput.files[0];
+            
+            // Obtém os dados de status do input hidden
+            const status = JSON.parse(statusDataInput.value);
+            
+            // 1. Lógica para obter a foto Base64
+            let fotoBase64 = null;
+            
+            if (arquivoFoto) {
+                fotoBase64 = await fileToBase64(arquivoFoto);
+            } else if (currentEditingId !== null) {
+                const fichas = getFichas();
+                const fichaAntiga = fichas.find(f => f.id === currentEditingId);
+                if (fichaAntiga) {
+                    fotoBase64 = fichaAntiga.fotoBase64;
+                }
+            }
+
+            if (!fotoBase64 && currentEditingId === null) {
+                console.error('Por favor, selecione uma foto para a ficha.');
+                return;
+            }
+
+            // 2. Lógica de Salvar vs Atualizar
+            const fichas = getFichas();
+
+            if (currentEditingId !== null) {
+                // Modo EDIÇÃO (Atualizar)
+                const fichaIndex = fichas.findIndex(f => f.id === currentEditingId);
+                if (fichaIndex !== -1) {
+                    fichas[fichaIndex].codigo = codigo;
+                    fichas[fichaIndex].nome = nome;
+                    fichas[fichaIndex].comentarios = comentarios; 
+                    fichas[fichaIndex].fotoBase64 = fotoBase64; 
+                    fichas[fichaIndex].status = status; // Salva o novo status
+                    console.log('Ficha atualizada com sucesso!');
+                }
+            } else {
+                // Modo NOVO CADASTRO
+                const novaFicha = {
+                    id: Date.now(), 
+                    codigo: codigo,
+                    nome: nome,
+                    comentarios: comentarios, 
+                    fotoBase64: fotoBase64,
+                    status: status // Salva o status padrão/selecionado
+                };
+                fichas.push(novaFicha);
+                console.log('Ficha salva com sucesso!');
+            }
+
+            salvarFichas(fichas);
+            cancelarEdicao(); // Reseta o formulário
+            renderizarFichas(barraPesquisa.value);
+        });
+
+        // --- Edição (Alterar) ---
+        
+        /** Prepara o formulário para editar uma ficha existente. */
+        function abrirEdicao(id) {
+            const fichas = getFichas();
+            const ficha = fichas.find(f => f.id === id);
+
+            if (ficha) {
+                // 1. Configura o estado de Edição
+                currentEditingId = ficha.id;
+                formTitle.textContent = `Alterar Ficha: ${ficha.codigo} - ${ficha.nome}`;
+                submitButton.textContent = 'Atualizar Ficha';
+                cancelEditButton.classList.remove('hidden');
+                
+                // 2. Preenche os campos
+                document.getElementById('codigo').value = ficha.codigo;
+                document.getElementById('nome').value = ficha.nome;
+                comentariosInput.value = ficha.comentarios || ''; 
+                
+                // 3. Renderiza o status da ficha atual no formulário
+                renderStatusForm(ficha.status);
+                
+                fotoInput.required = false;
+                fotoHint.classList.remove('hidden');
+
+                // 4. Rola para o formulário
+                form.scrollIntoView({ behavior: 'smooth' });
+                fecharModal();
+            }
+        }
+        
+        /** Alterna para o modo de edição a partir do modal. */
+        function abrirEdicaoDoModal() {
+            if (lastLoadedFicha) {
+                abrirEdicao(lastLoadedFicha.id);
+            }
+        }
+
+        /** Limpa o formulário e retorna ao modo de Novo Cadastro. */
+        function cancelarEdicao() {
+            currentEditingId = null;
+            form.reset();
+            formTitle.textContent = 'Cadastrar Nova Ficha';
+            submitButton.textContent = 'Salvar Ficha';
+            cancelEditButton.classList.add('hidden');
+            fotoInput.required = true;
+            fotoHint.classList.add('hidden');
+            comentariosInput.value = ''; 
+            
+            // Reseta a tabela de status para o padrão (Tudo Vermelho)
+            renderStatusForm(getDefaultStatus());
+        }
+
+        // --- Renderização da Lista e Pesquisa ---
+        
+        /** Desenha a lista de fichas na tela. */
+        function renderizarFichas(filtro = '') {
+            const fichas = getFichas();
+            listaFichasDiv.innerHTML = ''; // Limpa a lista atual
+            
+            const termo = filtro.toLowerCase().trim();
+            const fichasFiltradas = fichas.filter(ficha => {
+                // Filtra por código (que é salvo em maiúsculas) ou nome
+                return ficha.codigo.toLowerCase().includes(termo) || 
+                       ficha.nome.toLowerCase().includes(termo);
+            });
+            
+            if (fichasFiltradas.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            }
+            noResults.classList.add('hidden');
+
+            fichasFiltradas.forEach(ficha => {
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'ficha-item flex items-center p-3 rounded-lg bg-white shadow hover:shadow-md transition duration-150';
+                itemDiv.innerHTML = `
+                    <img class="miniatura" src="${ficha.fotoBase64}" alt="Foto ${ficha.nome}">
+                    <div class="ml-4 flex-grow truncate">
+                        <span class="block text-sm font-semibold text-indigo-700">${ficha.codigo}</span>
+                        <span class="block text-xs text-gray-500 truncate">${ficha.nome}</span>
+                    </div>
+                    <button onclick="event.stopPropagation(); abrirEdicao(${ficha.id});" 
+                            class="ml-auto text-sm text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-100 transition duration-150 hidden sm:block">
+                        Editar
+                    </button>
+                `;
+                // Adiciona o evento de clique para abrir o modal
+                itemDiv.onclick = () => abrirModal(ficha.id);
+                listaFichasDiv.appendChild(itemDiv);
+            });
+        }
+
+        barraPesquisa.addEventListener('input', function() {
+            renderizarFichas(this.value);
+        });
+
+        // --- Modal e Detalhes ---
+
+        /** Abre o modal de visualização detalhada. */
+        function abrirModal(id) {
+            const fichas = getFichas();
+            lastLoadedFicha = fichas.find(f => f.id === id);
+
+            if (lastLoadedFicha) {
+                // NOVO: Define o título do modal com o nome do molde
+                detalheTituloFicha.textContent = lastLoadedFicha.nome;
+                
+                document.getElementById('fotoAmpliada').src = lastLoadedFicha.fotoBase64;
+                document.getElementById('detalheCodigo').textContent = lastLoadedFicha.codigo;
+                document.getElementById('detalheNome').textContent = lastLoadedFicha.nome;
+                
+                // Renderiza a tabela de status no modal
+                renderStatusDetails(lastLoadedFicha.status);
+
+                // Processa os comentários para criar links e quebras de linha
+                const comentarios = lastLoadedFicha.comentarios || '';
+                const processedComentarios = processarComentarios(comentarios);
+                document.getElementById('detalheComentarios').innerHTML = processedComentarios;
+
+                modal.style.display = 'block';
+            }
+        }
+
+        /** Fecha o modal de visualização detalhada. */
+        function fecharModal() {
+            modal.style.display = 'none';
+            lastLoadedFicha = null;
+        }
+
+        // --- Impressão ---
+        
+        /** Prepara e dispara a impressão do conteúdo da ficha. */
+        function imprimirFicha() {
+            // Adiciona uma classe temporária ao body para indicar que estamos em modo de impressão
+            document.body.classList.add('print-area-active');
+            window.print();
+            // Remove a classe após a impressão (ou se a caixa de diálogo for cancelada)
+            document.body.classList.remove('print-area-active');
+        }
+
+        // --- Excluir ---
+        
+        /** Exclui a ficha atualmente selecionada no modal. */
+        function excluirFicha() {
+            if (!lastLoadedFicha) return;
+            
+            console.log(`Tentativa de excluir a ficha ${lastLoadedFicha.codigo}`);
+            
+            if (window.confirm(`Tem certeza que deseja excluir permanentemente a ficha ${lastLoadedFicha.codigo} - ${lastLoadedFicha.nome}?`)) {
+                let fichas = getFichas();
+                fichas = fichas.filter(f => f.id !== lastLoadedFicha.id);
+                salvarFichas(fichas);
+                fecharModal();
+                renderizarFichas(barraPesquisa.value);
+                console.log('Ficha excluída com sucesso!');
+            }
+        }
+
+        // --- Inicialização e Eventos Globais ---
+        
+        window.onload = function() {
+            renderizarFichas(); // Carrega as fichas ao iniciar
+            // Define o requisito inicial para a foto
+            fotoInput.required = true;
+            // Renderiza a tabela de status padrão ao carregar
+            renderStatusForm(getDefaultStatus());
+        }
+
+        // Fecha o modal se o usuário clicar fora dele
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                fecharModal();
+            }
+        }
+    </script>
+
+</body>
+</html>
